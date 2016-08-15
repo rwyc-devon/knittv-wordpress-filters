@@ -150,12 +150,14 @@ class KnittvFilter extends WP_Widget {
 			$slug=$tax->rewrite["slug"];
 			$query=get_query_var($slug);
 			$checked=$query? "": " checked";
+			$terms=get_terms(array("taxonomy"=>$tax->name, "orderby"=>"id", "hide_empty"=>false));
 			if($instance['showfilters']) {
-				echo "<div>";
+				$class=(count($terms)<3)?" class='small'":"";
 				echo "<h3>$tax->label</h3>";
+				echo "<div$class>";
 				echo "<input id='knittv-filter-$tax->name-all' type='radio' value='' name='$slug'$checked></input><label tabindex='0' for='knittv-filter-$tax->name-all'>All</label>";
 			}
-			foreach(get_terms(array("taxonomy"=>$tax->name, "orderby"=>"id", "hide_empty"=>false)) as $term) {
+			foreach($terms as $term) {
 				$checked=($query==$term->slug)? " checked" : "";
 				$id="knittv-filter-$tax->name-$term->slug";
 				if($checked || $instance['showfilters']) {
