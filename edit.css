@@ -1,0 +1,37 @@
+[id*=knittvfilter] form
+{
+}
+[id*=knittvfilter] input[type=checkbox]
+{
+	float: left;
+}
+[id*=knittvfilter] input[type=checkbox],
+[id*=knittvfilter] input[type=checkbox] + label
+{
+	display: block;
+	line-height: 1.5em;
+	height: 1.5em;
+}
+[id*=knittvfilter] .ifprev
+{
+	display: none;
+}
+[id*=knittvfilter] :checked + label + .ifprev
+{
+	display: block;
+}
+[id*=knittvfilter] h3
+{
+	margin: 0.25em 0;
+}
+[id*=knittvfilter] .filterchooser
+{
+	background: #ddd;
+	border-radius: 0.25em;
+	padding: 0.25em;
+	margin: 0.5em 0;
+}
+[id*=knittvfilter] select
+{
+	display: block;
+}

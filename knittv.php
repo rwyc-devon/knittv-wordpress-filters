@@ -9,6 +9,9 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 */
 define("WP_DEBUG_LOG", true);
 
+/*
+ * Register Taxonomies
+ */
 function knittv_get_taxonomies()
 {
 	return [
@@ -29,22 +32,6 @@ function knittv_get_taxonomies()
 		]
 	];
 }
-function knittv_options()
-{
-
-}
-function knittv_activate()
-{
-	
-}
-function knittv_deactivate()
-{
-
-}
-function knittv_enqueue_scripts() {
-	wp_enqueue_style('knittv-filters', plugin_dir_url(__FILE__) . '/style.css');
-	wp_enqueue_script('knittv-filters-submit', plugin_dir_url(__FILE__) . '/submit.js', array(), false, true);
-}
 function knittv_register_taxonomies()
 {
 	$taxonomies=knittv_get_taxonomies();
@@ -57,11 +44,24 @@ function knittv_register_taxonomies()
 		}
 	}
 }
+
+/*
+ * Enqueue Styles and Scripts
+ */
+function knittv_enqueue_scripts() {
+	wp_enqueue_style('knittv-filters', plugin_dir_url(__FILE__) . '/style.css');
+	wp_enqueue_script('knittv-filters-submit', plugin_dir_url(__FILE__) . '/submit.js', array(), false, true);
+}
+/*
+ * Metabox Stuff
+ */
 function knittv_metabox($post) {
+	$taxonomies=knittv_get_taxonomies();
 	$nonce=wp_create_nonce('knittv_metabox');
 	echo "<input type='hidden' name='knittv_metabox_nonce' value='$nonce'>";
-	knittv_metabox_select("difficulty");
-	knittv_metabox_select("technique");
+	foreach($taxonomies as $name=>$tax) {
+		knittv_metabox_select($name);
+	}
 	echo "</label>";
 }
 function knittv_metabox_select($taxonomy) {
@@ -82,13 +82,16 @@ function knittv_metabox_select($taxonomy) {
 }
 function add_knittv_metabox() {
 	add_meta_box('knittv-metabox', __('KnitTV Metadata'), 'knittv_metabox', 'post', 'side', 'core');
-	remove_meta_box('tagsdiv-difficulty', 'post', 'core');
-	remove_meta_box('tagsdiv-technique', 'post', 'core');
+	$taxonomies=knittv_get_taxonomies();
+	foreach($taxonomies as $name=>$tax) {
+		remove_meta_box("tagsdiv-$name", "post", "core");
+	}
 }
 
 function save_knittv_meta($postId) {
+	$taxonomies=knittv_get_taxonomies();
 	if(
-		!wp_verify_nonce($_POST["knittv_metabox_nonce"], "knittv_metabox") ||       #check nonce
+		!wp_verify_nonce($_POST["knittv_metabox_nonce"], "knittv_metabox") ||        #check nonce
 		(defined("DOING_AUTOSAVE") && DOING_AUTOSAVE) ||                             #only save if it's explicitly submitted; not for autosaves
 		($_POST["post_type"]=="page" && !current_user_can("edit_page", $postId)) ||  #check privileges
 		($_POST["post_type"]=="post" && !current_user_can("edit_post", $postId))
@@ -97,11 +100,20 @@ function save_knittv_meta($postId) {
 	}
 	$post=get_post($post_id);
 	if($post->post_type=="post" || $post->post_type=="page") {
-		wp_set_object_terms($postId, $_POST["post-difficulty"], "difficulty");
-		wp_set_object_terms($postId, $_POST["post-technique"], "technique");
+		foreach($taxonomies as $name=>$tax) {
+			if(isset($_POST["post-$name"])) wp_set_object_terms($postId, $_POST["post-$name"], $name);
+		}
 	}
 }
 
+/*
+ * Widget
+ */
+function knittv_enqueue_widget_scripts() {
+	wp_enqueue_script("knittv-widget-edit-script", plugin_dir_url(__FILE__) . "/edit.js", array(), false, true);
+	wp_register_style("knittv-widget-edit-style", plugin_dir_url(__FILE__) . "/edit.css");
+	wp_enqueue_style("knittv-widget-edit-style");
+}
 class KnittvFilter extends WP_Widget {
 	function __construct() {
 		parent::__construct(false, __("Filters"), array('description'=>'Filter Widget for KnitTV Taxonomies'));
@@ -149,28 +161,58 @@ class KnittvFilter extends WP_Widget {
 		echo "<input type='hidden' name='knittv_widget_nonce' value='$nonce'>";
 		$this->knittv_checkbox($instance, 'showsearch', 'Show Search');
 		$this->knittv_checkbox($instance, 'showfilters', 'Show Filters');
-		$this->knittv_checkbox($instance, 'showcategories', 'Show Categories');
+		echo "<div class='filterchooser ifprev'>";
+		echo "<h3>Filters</h3>";
+		$this->knittv_taxonomies($instance);
+		echo "</div>";
 		$this->knittv_checkbox($instance, 'submitonchange', 'Auto Submit');
 		$this->knittv_checkbox($instance, 'popupfilters', 'Pop Up Filters');
+	}
+	function knittv_taxonomies($instance) {
+		$n=0;
+		while(isset($instance["taxes"]) && isset($instance["taxes"][$n]) && $instance["taxes"][$n]) {
+			$this->knittv_tax_select($n, $instance["taxes"][$n]);
+			$n++;
+		}
+		$this->knittv_tax_select($n);
+	}
+	function knittv_tax_select($n, $val) {
+		$name=esc_attr($this->get_field_name("tax" . sprintf("%02d", $n)));
+		$class=($n==0)?" class='first'":"";
+		echo "<select$class name='$name'>";
+			$taxonomies=get_taxonomies(array("public"=>true, "show_ui"=>true), "objects");
+			echo "<option value=''></option>";
+			foreach($taxonomies as $tax) {
+				$selected=($tax->name==$val)? " selected": "";
+				echo "<option value='$tax->name'$selected>$tax->label</option>";
+			}
+		echo "</select>";
 	}
 	function knittv_checkbox($instance, $attribute, $label) {
 		$name=esc_attr($this->get_field_name($attribute));
 		$id=esc_attr($this->get_field_id($attribute));
 		$checked=(isset($instance[$attribute]))? " checked": "";
-		echo "<label style='display: block'><input type='checkbox' id='$id' name='$name'$checked></input>$label</label>";
+		echo "<input type='checkbox' id='$id' name='$name'$checked></input><label for='$id'>$label</label>";
 	}
 	function knittv_input($attribute, $label, $default="") {
 		$n=esc_attr($this->get_field_name($attribute));
 		$value=esc_attr(isset($instance[$attribute])? $instance[$attribute]: $default);
-		echo "<label style='display: block'>$label<input name='$name' value='$value'></input></label>";
+		echo "<label>$label<input name='$name' value='$value'></input></label>";
 	}
 	function update($new, $old) {
 		$instance=array();
 		if(wp_verify_nonce($_POST["knittv_widget_nonce"], "knittv_widget_form")) {
+			#extract taxonomies array
+			$taxkeys=preg_grep('/^tax[0-9][0-9]$/', array_keys($new));
+			asort($taxkeys);
+			$instance["taxes"]=[];
+			foreach($taxkeys as $i) {
+				if($new[$i]) array_push($instance["taxes"], $new[$i]);
+			}
 			foreach(array("showsearch", "showfilters", "showcategories", "submitonchange", "popupfilters") as $i) {
 				$instance[$i]=(isset($new[$i]) && ($new[$i]=="checked"));
 			}
-			return $new;
+			return $instance;
 		}
 		else {
 			return $old;
@@ -180,12 +222,19 @@ class KnittvFilter extends WP_Widget {
 function knittv_register_widgets() {
 	register_widget("KnittvFilter");
 }
+
+/*
+ * Actually calling the stuff
+ */
 if(defined('ABSPATH')) { #don't actually do anything if this file was directly requested
 	add_action( 'wp_enqueue_scripts', 'knittv_enqueue_scripts' );
 	register_activation_hook("knittv/knittv.php", knittv_activate);
 	register_deactivation_hook("knittv/knittv.php", knittv_deactivate);
 	add_action('init', 'knittv_register_taxonomies');
 	add_action('widgets_init', 'knittv_register_widgets');
-	if(is_admin()) add_action('save_post', 'save_knittv_meta');
-	if(is_admin()) add_action('admin_menu', 'add_knittv_metabox');
+	if(is_admin()) {
+		add_action('save_post', 'save_knittv_meta');
+		add_action('admin_menu', 'add_knittv_metabox');
+		add_action( 'admin_enqueue_scripts', 'knittv_enqueue_widget_scripts' );
+	}
 }
