@@ -8,9 +8,34 @@ License:     GPL3
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 */
 define("WP_DEBUG_LOG", true);
-function knittv_activate()
+
+function knittv_get_taxonomies()
+{
+	return [
+		"difficulty" => [
+			"label"=> "Difficulty",
+			"defaults"=> [
+				"Beginner",
+				"Intermediate",
+				"Advanced"
+			]
+		],
+		"technique" => [
+			"label"=> "Technique",
+			"defaults"=> [
+				"Knit",
+				"Crochet",
+			]
+		]
+	];
+}
+function knittv_options()
 {
 
+}
+function knittv_activate()
+{
+	
 }
 function knittv_deactivate()
 {
@@ -22,35 +47,21 @@ function knittv_enqueue_scripts() {
 }
 function knittv_register_taxonomies()
 {
-	register_taxonomy(
-		'difficulty',
-		'post',
-		array(
-			'label' => __('Difficulty'),
-			'rewrite' => array('slug' => 'difficulty'),
-		)
-	);
-	wp_insert_term('Beginner', 'difficulty');
-	wp_insert_term('Intermediate', 'difficulty');
-	wp_insert_term('Advanced', 'difficulty');
-	register_taxonomy(
-		'technique',
-		'post',
-		array(
-			'label' => __('Technique'),
-			'rewrite' => array('slug' => 'technique'),
-		)
-	);
-	wp_insert_term('Knit', 'technique');
-	wp_insert_term('Crochet', 'technique');
+	$taxonomies=knittv_get_taxonomies();
+	foreach($taxonomies as $name=>$tax) {
+		register_taxonomy($name, "post", [ "label"=>$tax["label"], "rewrite"=>["slug"=>$name] ] );
+		if(isset($name["defaults"])) {
+			foreach($name["defaults"] as $val) {
+				wp_insert_term($val, $name);
+			}
+		}
+	}
 }
 function knittv_metabox($post) {
 	$nonce=wp_create_nonce('knittv_metabox');
 	echo "<input type='hidden' name='knittv_metabox_nonce' value='$nonce'>";
 	knittv_metabox_select("difficulty");
 	knittv_metabox_select("technique");
-	echo "<label style='display: block; overflow: hidden'>YouTube URL\n";
-	echo "<input style='width: 100%' name='post_youtube' value='".get_post_meta(get_the_ID($post), "youtube-url", true)."'></input>\n";
 	echo "</label>";
 }
 function knittv_metabox_select($taxonomy) {
@@ -88,7 +99,6 @@ function save_knittv_meta($postId) {
 	if($post->post_type=="post" || $post->post_type=="page") {
 		wp_set_object_terms($postId, $_POST["post-difficulty"], "difficulty");
 		wp_set_object_terms($postId, $_POST["post-technique"], "technique");
-		update_post_meta($postId, "youtube-url", $_POST["post_youtube"]);
 	}
 }
 
@@ -170,7 +180,7 @@ class KnittvFilter extends WP_Widget {
 function knittv_register_widgets() {
 	register_widget("KnittvFilter");
 }
-if(defined('ABSPATH')) {
+if(defined('ABSPATH')) { #don't actually do anything if this file was directly requested
 	add_action( 'wp_enqueue_scripts', 'knittv_enqueue_scripts' );
 	register_activation_hook("knittv/knittv.php", knittv_activate);
 	register_deactivation_hook("knittv/knittv.php", knittv_deactivate);
