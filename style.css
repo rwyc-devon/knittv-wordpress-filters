@@ -1,0 +1,97 @@
+.knittv-widget .knittv-search
+{
+	border-radius: 0.25em;
+	overflow: hidden;
+	background: #0ff;
+	display: flex;
+	padding: 0;
+	border: 1px solid #aaa;
+}
+.knittv-widget .knittv-search input[name=s]
+{
+	flex: 1;
+	min-width: 8em;
+}
+.knittv-widget .knittv-search input[type=submit]
+{
+	padding: 0 0.5em;
+}
+.knittv-widget .knittv-search input
+{
+	line-height: 2em;
+	height: 2em;
+	padding: 0 0.5em;
+	border: none;
+	border-radius: 0;
+	vertical-align: middle;
+}
+.knittv-widget label
+{
+	display: block;
+	padding: 0 0.25em;
+	line-height: 1.75em;
+	vertical-align: middle;
+	position: relative;
+	padding-left: 1.5em;
+	transition: background 0.2s;
+}
+.knittv-widget input[type=radio] + label:hover,
+.knittv-widget input[type=radio] + label:focus
+{
+	background: #ddd;
+}
+.knittv-widget input[type=radio]
+{
+	display: none;
+}
+.knittv-widget input[type=radio] + label
+{
+	border-radius: 0.25em;
+	outline: 0;
+	cursor: pointer;
+}
+.knittv-widget input[type=radio]:checked + label
+{
+	background: #ccc;
+}
+.knittv-widget input[type=radio]:checked + label:hover,
+.knittv-widget input[type=radio]:checked + label:focus
+{
+	background: #bbb;
+}
+.knittv-widget input[type=radio] + label::before,
+.knittv-widget input[type=radio] + label::after
+{
+	content: "";
+	width: 0.75em;
+	height: 0.75em;
+	border-radius: 1em;
+	position: absolute;
+	top: 50%;
+	left: 0.5em;
+	margin-top: -0.375em;
+	transition: background 0.2s;
+	background: #fff;
+}
+.knittv-widget input[type=radio] + label::after
+{
+	width: 0.5em;
+	height: 0.5em;
+	margin-top: -0.25em;
+	margin-left: 0.125em;
+	transition: background 0.5s
+}
+.knittv-widget input[type=radio]:checked + label::after
+{
+	background: inherit;
+}
+.knittv-widget h2,
+.knittv-widget h3
+{
+	margin-top: 0.25em;
+	margin-bottom: 0.125em;
+}
+.knittv-widget.popupFilters:not(.focussed) .knittv-search ~ *
+{
+	display: none;
+}
