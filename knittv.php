@@ -9,6 +9,14 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 */
 define("WP_DEBUG_LOG", true);
 
+function dumpp($var)
+{
+	ob_start();
+	var_dump($var);
+	$contents = ob_get_contents();
+	ob_end_clean();
+	error_log($contents);
+}
 /*
  * Register Taxonomies
  */
@@ -130,7 +138,12 @@ class KnittvFilter extends WP_Widget {
 		elseif(get_search_query() != "") {
 			echo "<input name='s' value='".get_search_query()."' hidden></input>";
 		}
-		$taxonomies=get_taxonomies(array("public"=>true, "show_ui"=>true, "_builtin"=>false), "objects"); #load up taxonomies to be used
+		$taxonomies=array();
+		if($instance["taxes"]) {
+			foreach($instance["taxes"] as $name) {
+				array_push($taxonomies, get_taxonomy($name));
+			}
+		}
 		if($instance["showcategories"]) $taxonomies=array_merge($taxonomies, get_taxonomies(array("name"=>"category"), "objects")); #append category taxonomy if enabled
 		if($instance['showfilters']) echo "<h2>Filters</h2>";
 		foreach($taxonomies as $tax) {
@@ -174,12 +187,12 @@ class KnittvFilter extends WP_Widget {
 			$this->knittv_tax_select($n, $instance["taxes"][$n]);
 			$n++;
 		}
-		$this->knittv_tax_select($n);
+		$this->knittv_tax_select($n, "");
 	}
 	function knittv_tax_select($n, $val) {
 		$name=esc_attr($this->get_field_name("tax" . sprintf("%02d", $n)));
 		$class=($n==0)?" class='first'":"";
-		echo "<select$class name='$name'>";
+		echo "<select$class name='$name' value='$val' autocomplete='off'>";
 			$taxonomies=get_taxonomies(array("public"=>true, "show_ui"=>true), "objects");
 			echo "<option value=''></option>";
 			foreach($taxonomies as $tax) {
@@ -191,7 +204,7 @@ class KnittvFilter extends WP_Widget {
 	function knittv_checkbox($instance, $attribute, $label) {
 		$name=esc_attr($this->get_field_name($attribute));
 		$id=esc_attr($this->get_field_id($attribute));
-		$checked=(isset($instance[$attribute]))? " checked": "";
+		$checked=$instance[$attribute]? " checked": "";
 		echo "<input type='checkbox' id='$id' name='$name'$checked></input><label for='$id'>$label</label>";
 	}
 	function knittv_input($attribute, $label, $default="") {
@@ -207,10 +220,12 @@ class KnittvFilter extends WP_Widget {
 			asort($taxkeys);
 			$instance["taxes"]=[];
 			foreach($taxkeys as $i) {
-				if($new[$i]) array_push($instance["taxes"], $new[$i]);
+				if($new[$i]) {
+					array_push($instance["taxes"], $new[$i]);
+				}
 			}
 			foreach(array("showsearch", "showfilters", "showcategories", "submitonchange", "popupfilters") as $i) {
-				$instance[$i]=(isset($new[$i]) && ($new[$i]=="checked"));
+				$instance[$i]=(isset($new[$i]) && ($new[$i]=="on"));
 			}
 			return $instance;
 		}
