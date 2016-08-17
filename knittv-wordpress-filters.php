@@ -128,6 +128,7 @@ class KnittvFilter extends WP_Widget {
 	}
 	function widget($args, $instance) {
 		global $wp_query;
+		#echo "<pre>";var_dump($wp_query);echo "</pre>";
 		$classes="knittv-widget knittv-filter";
 		$classes.=($instance["submitonchange"]?" submitOnChange": "");
 		$classes.=($instance["popupfilters"]?" popupFilters": "");
@@ -152,11 +153,10 @@ class KnittvFilter extends WP_Widget {
 		foreach($taxonomies as $tax) {
 			$slug=$tax->rewrite["slug"];
 			$query=get_query_var($tax->query_var);
-			echo "<pre>";
-			echo "</pre>";
 			$parent="";
 			if($tax->name=="category") {
-				$parent=get_term_by("slug", $query, $tax->name);
+				$root_cat=explode("/", $wp_query->query["category_name"], 2)[0];
+				$parent=get_term_by("slug", $root_cat, $tax->name);
 				$terms=get_terms(array("taxonomy"=>$tax->name, "orderby"=>$instance["orderby"], "hide_empty"=>$instance["hideempty"], "parent"=>$parent->term_id));
 			}
 			else {
