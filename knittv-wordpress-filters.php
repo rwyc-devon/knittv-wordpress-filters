@@ -180,7 +180,7 @@ class KnittvFilter extends WP_Widget {
 		$this->knittv_checkbox($instance, 'showsearch', 'Show Search');
 		$this->knittv_checkbox($instance, 'showfilters', 'Show Filters');
 		echo "<div class='filterchooser ifprev'>";
-		echo "<h3>Filters</h3>";
+		echo "<h3 class='widget-title'>Filters</h3>";
 		$this->knittv_taxonomies($instance);
 		echo "</div>";
 		$this->knittv_checkbox($instance, 'submitonchange', 'Auto Submit');
