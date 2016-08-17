@@ -131,7 +131,7 @@ class KnittvFilter extends WP_Widget {
 		$classes="knittv-widget knittv-filter";
 		$classes.=($instance["submitonchange"]?" submitOnChange": "");
 		$classes.=($instance["popupfilters"]?" popupFilters": "");
-		echo "<form method='get' class='$classes'>";
+		echo "<form method='get' class='$classes' data-prefix='${instance["prefix"]}'>";
 		if($instance['showsearch']){
 			echo "<label class='knittv-search'><input name='s' value='".get_search_query()."'></input><input type='submit' value='".__("Search")."'></input></label>";
 		}
@@ -145,7 +145,10 @@ class KnittvFilter extends WP_Widget {
 			}
 		}
 		if($instance["showcategories"]) $taxonomies=array_merge($taxonomies, get_taxonomies(array("name"=>"category"), "objects")); #append category taxonomy if enabled
-		if($instance['showfilters']) echo "<h2>Filters</h2>";
+		if($instance['showfilters']) {
+			echo "<h2>Filters</h2>";
+			echo "<input class='reset' type='reset'></input>";
+		}
 		foreach($taxonomies as $tax) {
 			$slug=$tax->rewrite["slug"];
 			$query=get_query_var($slug);
@@ -182,6 +185,9 @@ class KnittvFilter extends WP_Widget {
 		echo "</div>";
 		$this->knittv_checkbox($instance, 'submitonchange', 'Auto Submit');
 		$this->knittv_checkbox($instance, 'popupfilters', 'Pop Up Filters');
+		$this->knittv_input($instance, 'prefix', 'URL Prefix');
+		echo "<p>Set a path to apply searches and filters to only a subset of the site. All filter urls will be prefixed with this path.</p>";
+		echo "<p>For example, if a user searches <code>'cats'</code> the resulting URL will be <code>?s=cats</code>, whereas if the prefix is set to <code>gifs</code> the URL will be <code>/gifs?s=cats</code></p>";
 	}
 	function knittv_taxonomies($instance) {
 		$n=0;
@@ -209,10 +215,11 @@ class KnittvFilter extends WP_Widget {
 		$checked=$instance[$attribute]? " checked": "";
 		echo "<input type='checkbox' id='$id' name='$name'$checked></input><label for='$id'>$label</label>";
 	}
-	function knittv_input($attribute, $label, $default="") {
-		$n=esc_attr($this->get_field_name($attribute));
+	function knittv_input($instance, $attribute, $label, $default="") {
+		$name=esc_attr($this->get_field_name($attribute));
+		$id=esc_attr($this->get_field_id($attribute));
 		$value=esc_attr(isset($instance[$attribute])? $instance[$attribute]: $default);
-		echo "<label>$label<input name='$name' value='$value'></input></label>";
+		echo "<label for='$id'>$label</label><input id='$id' name='$name' value='$value'></input>";
 	}
 	function update($new, $old) {
 		$instance=array();
@@ -229,6 +236,7 @@ class KnittvFilter extends WP_Widget {
 			foreach(array("showsearch", "showfilters", "showcategories", "submitonchange", "popupfilters") as $i) {
 				$instance[$i]=(isset($new[$i]) && ($new[$i]=="on"));
 			}
+			$instance["prefix"]=$new["prefix"];
 			return $instance;
 		}
 		else {
