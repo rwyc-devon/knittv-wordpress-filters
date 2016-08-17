@@ -151,20 +151,30 @@ class KnittvFilter extends WP_Widget {
 		}
 		foreach($taxonomies as $tax) {
 			$slug=$tax->rewrite["slug"];
-			$query=get_query_var($slug);
-			$checked=$query? "": " checked";
-			$terms=get_terms(array("taxonomy"=>$tax->name, "orderby"=>"id", "hide_empty"=>false));
+			$query=get_query_var($tax->query_var);
+			echo "<pre>";
+			echo "</pre>";
+			$parent="";
+			if($tax->name=="category") {
+				$parent=get_term_by("slug", $query, $tax->name);
+				$terms=get_terms(array("taxonomy"=>$tax->name, "orderby"=>$instance["orderby"], "hide_empty"=>$instance["hideempty"], "parent"=>$parent->term_id));
+			}
+			else {
+				$terms=get_terms(array("taxonomy"=>$tax->name, "orderby"=>$instance["orderby"], "hide_empty"=>$instance["hideempty"]));
+			}
 			if($instance['showfilters']) {
 				$class=(count($terms)<3)?" class='small'":"";
 				echo "<h3>$tax->label</h3>";
 				echo "<div$class>";
-				echo "<input id='knittv-filter-$tax->name-all' type='radio' value='' name='$slug'$checked></input><label tabindex='0' for='knittv-filter-$tax->name-all'>All</label>";
+				$slug=($parent!="")? $parent->slug: "";
+				$checked=($query && $query==$parent->query_var)? "": " checked";
+				echo "<input id='knittv-filter-$tax->name-all' type='radio' value='$slug' name='$tax->query_var'$checked></input><label tabindex='0' for='knittv-filter-$tax->name-all'>All</label>";
 			}
 			foreach($terms as $term) {
 				$checked=($query==$term->slug)? " checked" : "";
 				$id="knittv-filter-$tax->name-$term->slug";
 				if($checked || $instance['showfilters']) {
-					echo "<input id='$id' type='radio' value='$term->slug' name='$slug'$checked></input>";
+					echo "<input id='$id' type='radio' value='$term->slug' name='$tax->query_var'$checked></input>";
 				}
 				if($instance['showfilters']) {
 					echo "<label tabindex='0' for='$id'>$term->name</label>";
@@ -185,6 +195,8 @@ class KnittvFilter extends WP_Widget {
 		echo "</div>";
 		$this->knittv_checkbox($instance, 'submitonchange', 'Auto Submit');
 		$this->knittv_checkbox($instance, 'popupfilters', 'Pop Up Filters');
+		$this->knittv_checkbox($instance, 'hideempty', 'Hide Empty Terms');
+		$this->knittv_input($instance, 'orderby', 'Order Terms By');
 		$this->knittv_input($instance, 'prefix', 'URL Prefix');
 		echo "<p>Set a path to apply searches and filters to only a subset of the site. All filter urls will be prefixed with this path.</p>";
 		echo "<p>For example, if a user searches <code>'cats'</code> the resulting URL will be <code>?s=cats</code>, whereas if the prefix is set to <code>gifs</code> the URL will be <code>/gifs?s=cats</code></p>";
@@ -233,9 +245,10 @@ class KnittvFilter extends WP_Widget {
 					array_push($instance["taxes"], $new[$i]);
 				}
 			}
-			foreach(array("showsearch", "showfilters", "showcategories", "submitonchange", "popupfilters") as $i) {
+			foreach(array("showsearch", "showfilters", "showcategories", "submitonchange", "popupfilters", "hideempty") as $i) {
 				$instance[$i]=(isset($new[$i]) && ($new[$i]=="on"));
 			}
+			$instance["orderby"]=$new["orderby"];
 			$instance["prefix"]=$new["prefix"];
 			return $instance;
 		}

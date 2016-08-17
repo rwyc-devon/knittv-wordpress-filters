@@ -21,6 +21,11 @@
 			url+="/"+prefix;
 		}
 		var queryString="";
+		//WordPress freaks out if category doesn't come first
+		if(attributes.category_name) {
+		queryString += "?category_name=" + encodeURIComponent(attributes.category_name);
+			delete attributes.category_name;
+		}
 		for(i in attributes) {
 			if(attributes[i].length>0) {
 				if(queryString.length>0) {
@@ -32,6 +37,7 @@
 				queryString += encodeURIComponent(i) + "=" + encodeURIComponent(attributes[i]);
 			}
 		}
+		console.log(url+queryString);
 		window.location.href=url+queryString;
 	};
 	var reset=function() {
